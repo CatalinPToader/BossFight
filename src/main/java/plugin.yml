@@ -1,0 +1,16 @@
+name: Boss_Fight
+version: 0.0.1-dev
+author: Kare
+description: Plugin adding bosses to vanilla minecraft for more difficult PVE content.
+main: me.kare.bossfight.BossFight
+api-version: 1.17
+
+commands:
+  zombieboss:
+    description: Spawns a zombie boss
+    usage: /zombieboss
+    permission: Operator
+  gui:
+    description: Shows summon GUI
+    usage: /gui
+    permission: Operator
