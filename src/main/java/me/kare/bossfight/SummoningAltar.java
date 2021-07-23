@@ -9,20 +9,19 @@ import com.github.stefvanschie.inventoryframework.pane.StaticPane;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.minecraft.server.level.WorldServer;
 import net.minecraft.util.Tuple;
 import org.bukkit.*;
 import org.bukkit.block.EnchantingTable;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -64,7 +63,7 @@ public class SummoningAltar implements CommandExecutor, Listener {
 
         menu.addPane(background);
 
-        var navigationPane = new StaticPane(0, 0, 3, 1);
+        var navigationPane = new StaticPane(3, 0, 3, 1);
 
         var zombieBoss = new ItemStack(Material.ZOMBIE_HEAD);
         var zombieMeta = zombieBoss.getItemMeta();
@@ -84,25 +83,22 @@ public class SummoningAltar implements CommandExecutor, Listener {
         zombieBoss.setItemMeta(zombieMeta);
 
         navigationPane.addItem(new GuiItem(zombieBoss, event -> {
+            clickZombie(canSummon, sacrifice, p, l);
+        }), 0, 0);
 
-            if(canSummon) {
-                sacrifice.getWorld().strikeLightningEffect(sacrifice.getLocation());
-                sacrifice.damage(100);
-                var inv = p.getInventory();
-                BossFight.removeItems(inv, Material.ROTTEN_FLESH, 192);
-                BossFight.removeItems(inv, Material.ZOMBIE_HEAD, 1);
-                p.giveExp(-825);
-                p.closeInventory();
-                playSummonEffect(l.getWorld(), l);
-                Bukkit.getScheduler().runTaskLater(BossFight.getInstance(), () -> summonZombie(new Location(l.getWorld(), l.getX(), l.getY() + 1, l.getZ())), 30L);
-            }
-            else if (p.getGameMode() == GameMode.CREATIVE) {
-                p.closeInventory();
-                playSummonEffect(l.getWorld(), l);
-                Bukkit.getScheduler().runTaskLater(BossFight.getInstance(), () -> summonZombie(new Location(l.getWorld(), l.getX(), l.getY() + 1, l.getZ())), 30L);
-            }
+        var value = "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDZiYTYzMzQ0ZjQ5ZGQxYzRmNTQ4OGU5MjZiZjNkOWUyYjI5OTE2YTZjNTBkNjEwYmI0MGE1MjczZGM4YzgyIn19fQ==";
 
-        }), 1, 0);
+        var skeletonBoss = BossFight.getSkullFromBase64(value);
+        var skeletonMeta = skeletonBoss.getItemMeta();
+        skeletonMeta.displayName(
+                Component.text("Coming Soon")
+                        .color(TextColor.color(0xAA0000))
+                        .decoration(TextDecoration.ITALIC, false)
+                        .decoration(TextDecoration.BOLD, true));
+        skeletonBoss.setItemMeta(skeletonMeta);
+
+        navigationPane.addItem(new GuiItem(skeletonBoss, event -> {}), 1, 0);
+        navigationPane.addItem(new GuiItem(skeletonBoss, event -> {}), 2, 0);
 
         menu.addPane(navigationPane);
 
@@ -117,14 +113,45 @@ public class SummoningAltar implements CommandExecutor, Listener {
         Bukkit.getScheduler().runTaskLater(BossFight.getInstance(), () -> w.strikeLightningEffect(l), 30L);
     }
 
-    private void summonZombie(Location l) {
-        ZombieBoss zb = new ZombieBoss(l); // Calls CustomPig constructor
-        WorldServer world = ((CraftWorld) l.getWorld()).getHandle(); // Creates and NMS world
-        world.addEntity(zb);
+    private void clickZombie(boolean canSummon, Villager sacrifice, Player p, Location l) {
+        if (!isLocationGood(l)) {
+            p.sendMessage("The area around the summoning altar isn't clear. Ritual needs 11x5x11 clear.");
+            return;
+        }
+
+        if (canSummon) {
+            sacrifice.getWorld().strikeLightningEffect(sacrifice.getLocation());
+            sacrifice.damage(100);
+            var inv = p.getInventory();
+            BossFight.removeItems(inv, Material.ROTTEN_FLESH, 192);
+            BossFight.removeItems(inv, Material.ZOMBIE_HEAD, 1);
+            p.giveExp(-825);
+            p.closeInventory();
+            playSummonEffect(l.getWorld(), l);
+            Bukkit.getScheduler().runTaskLater(BossFight.getInstance(), () -> ZombieBossHandler.summonZombieBoss(new Location(l.getWorld(), l.getX(), l.getY() + 1, l.getZ())), 30L);
+        } else if (p.getGameMode() == GameMode.CREATIVE) {
+            p.closeInventory();
+            playSummonEffect(l.getWorld(), l);
+            Bukkit.getScheduler().runTaskLater(BossFight.getInstance(), () -> ZombieBossHandler.summonZombieBoss(new Location(l.getWorld(), l.getX(), l.getY() + 1, l.getZ())), 30L);
+        }
+    }
+
+    private boolean isLocationGood(Location l) {
+        var w = l.getWorld();
+        for (var i = -5; i <= 5; i++)
+            for (var j = -5; j <= 5; j++)
+                for (var k = 0; k <= 5; k++) {
+                    if (!(i == 0 && j == 0)) {
+                        var newloc = new Location(w, l.getX() + i, l.getY() + k, l.getZ() + j);
+                        if(w.getBlockAt(newloc).getState().getType() != Material.AIR)
+                            return false;
+                    }
+                }
+        return true;
     }
 
     private Tuple<Boolean, Villager> checkMatsZombie(List<Component> list, Player p, Location l) {
-        boolean canSummon = true;
+        var canSummon = true;
         Villager sacrifice = null;
 
         var available = TextColor.color(0x00871C);
@@ -175,15 +202,26 @@ public class SummoningAltar implements CommandExecutor, Listener {
         return new Tuple<>(canSummon, sacrifice);
     }
 
-/*
+
     @EventHandler
     private void onBlockPlace(BlockPlaceEvent e) {
-        Player p = e.getPlayer();
-        Block b = e.getBlock();
-        if (b.getState() instanceof EnchantingTable)
-            Bukkit.getLogger().info(((EnchantingTable) b.getState()).getCustomName());
+        var p = e.getPlayer();
+        var b = e.getBlock().getState();
+        if (b.getType() == Material.END_PORTAL_FRAME) {
+            ItemStack item;
+            var inv = p.getInventory();
+            var main = inv.getItemInMainHand();
+            if (main.getType() == Material.END_PORTAL_FRAME)
+                item = main;
+            else
+                item = inv.getItemInOffHand();
+
+            if (item.displayName().toString().contains("Gravestep")) {
+                e.setCancelled(true);
+            }
+        }
     }
- */
+
 
     @EventHandler
     private void onBlockInteract(PlayerInteractEvent e) {

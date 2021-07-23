@@ -19,13 +19,15 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
+import java.util.Random;
 
-public class ZombieBoss extends EntityZombie {
-    static final int MAX_THUNDER_CD = 200;
-    static final int MAX_MINION_CD = 300;
+public class ZombieBoss extends EntityZombie{
+    Random r;
+    static final int MAX_CD = 300;
+    static final int MIN_CD = 100;
     static final int MINIONS = 6;
-    int thunderCD = MAX_THUNDER_CD/2;
-    int minionCD = MAX_MINION_CD/2;
+    int thunderCD = MAX_CD/3;
+    int minionCD = MAX_CD/2;
     String name = ChatColor.DARK_RED + "Gravestep";
     boolean isDead = false;
 
@@ -71,7 +73,7 @@ public class ZombieBoss extends EntityZombie {
                 bar.addPlayer((Player) e);
             }
         }
-
+        r = new Random();
     }
 
 
@@ -102,7 +104,17 @@ public class ZombieBoss extends EntityZombie {
                 target.setHealth(oldHealth);
                 double newHealth = Math.max(0, oldHealth - damage * (1 - damageReduction));
                 target.setHealth(newHealth);
-                thunderCD = MAX_THUNDER_CD;
+                var vect = target.getLocation().getDirection().multiply(-1);
+                var vectX = vect.getX();
+                if(Math.abs(vectX) < 1) {
+                    vect.setX(vectX + 1 * Math.signum(vectX));
+                }
+                var vectZ = vect.getZ();
+                if(Math.abs(vectZ) < 1) {
+                    vect.setX(vectZ + 1 * Math.signum(vectZ));
+                }
+                target.setVelocity(vect);
+                thunderCD = r.nextInt(MAX_CD-MIN_CD)+MIN_CD;
                 thisBukkit.setAdult();
                 thisBukkit.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.275d);
             }
@@ -120,7 +132,7 @@ public class ZombieBoss extends EntityZombie {
                             z.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.375d);
                             thisBukkit.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE).setBaseValue(8d);
                         }
-                        minionCD = MAX_MINION_CD;
+                        minionCD = r.nextInt(MAX_CD-MIN_CD)+MIN_CD;
                         thisBukkit.setBaby();
                         thisBukkit.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(0.225d);
                         break;

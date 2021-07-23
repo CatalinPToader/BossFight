@@ -1,5 +1,5 @@
 name: Boss_Fight
-version: 0.0.1-dev
+version: 0.0.1
 author: Kare
 description: Plugin adding bosses to vanilla minecraft for more difficult PVE content.
 main: me.kare.bossfight.BossFight
