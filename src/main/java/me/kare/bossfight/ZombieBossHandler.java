@@ -13,18 +13,17 @@ import org.bukkit.craftbukkit.v1_17_R1.CraftWorld;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Zombie;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ZombieBossHandler implements CommandExecutor, Listener {
+public class ZombieBossHandler implements CommandExecutor{
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (sender instanceof Player p) {
             summonZombieBoss(p.getLocation());
+            return true;
         }
         return false;
     }
@@ -35,8 +34,7 @@ public class ZombieBossHandler implements CommandExecutor, Listener {
         world.addEntity(zb); // Adds the entity to the world
     }
 
-    @EventHandler
-    public void onMobDeath(EntityDeathEvent e) {
+    public static void onMobDeath(EntityDeathEvent e) {
         if (e.getEntity() instanceof Zombie cz && e.getEntity().getKiller() != null
                 && cz.getEquipment().getHelmet().getType() == Material.END_PORTAL_FRAME) {
             e.getDrops().clear();
@@ -50,7 +48,7 @@ public class ZombieBossHandler implements CommandExecutor, Listener {
         }
     }
 
-    private ItemStack generateNormalDrop() {
+    private static ItemStack generateNormalDrop() {
         var sword = new ItemStack(Material.DIAMOND_SWORD, 1);
         var swordMeta = sword.getItemMeta();
         Component name = Component.text("Gravestep Falchion")
@@ -67,7 +65,7 @@ public class ZombieBossHandler implements CommandExecutor, Listener {
         return sword;
     }
 
-    private ItemStack generateUniqueDrop() {
+    private static ItemStack generateUniqueDrop() {
         var unique = new ItemStack(Material.END_PORTAL_FRAME);
         var uniqueMeta = unique.getItemMeta();
         var name = Component.text("Gravestep Head")

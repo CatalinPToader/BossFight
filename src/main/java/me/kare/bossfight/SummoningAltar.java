@@ -34,6 +34,7 @@ public class SummoningAltar implements CommandExecutor, Listener {
         if (sender instanceof Player p) {
             ChestGui menu = summonGUI(p, p.getLocation());
             menu.show(p);
+            return true;
         }
         return false;
     }
@@ -202,9 +203,7 @@ public class SummoningAltar implements CommandExecutor, Listener {
         return new Tuple<>(canSummon, sacrifice);
     }
 
-
-    @EventHandler
-    private void onBlockPlace(BlockPlaceEvent e) {
+    public static void onBlockPlace(BlockPlaceEvent e) {
         var p = e.getPlayer();
         var b = e.getBlock().getState();
         if (b.getType() == Material.END_PORTAL_FRAME) {

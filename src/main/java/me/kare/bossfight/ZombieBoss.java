@@ -80,9 +80,15 @@ public class ZombieBoss extends EntityZombie{
     @Override
     public void tick() {
         super.tick();
+        List<Entity> near = thisBukkit.getNearbyEntities(30d, 30d, 30d); // get all nearby entities
         var health = this.getHealth();
-        if (health > 0)
+        if (health > 0) {
             bar.setProgress(this.getHealth() / this.getMaxHealth());
+            bar.removeAll();
+            for (Entity e : near)
+                if (e instanceof Player)
+                    bar.addPlayer((Player) e);
+        }
         else if (!isDead) {
             bar.setProgress(0);
             isDead = true;
@@ -94,7 +100,7 @@ public class ZombieBoss extends EntityZombie{
             if (thunderCD <= 30 && thunderCD % 5 == 0) {
                 world.playEffect(thisBukkit.getLocation(), Effect.POTION_BREAK, 2);
             }
-            if (thunderCD <= 0 && this.getGoalTarget() != null) {
+            if (thunderCD <= 0 && this.getGoalTarget() != null && this.getGoalTarget().getBukkitEntity() instanceof Player) {
                 Player target = (Player) this.getGoalTarget().getBukkitEntity();
                 var damage = 4;
                 var damageReduction = 0;
@@ -102,6 +108,8 @@ public class ZombieBoss extends EntityZombie{
                 double oldHealth = target.getHealth();
                 target.damage(1d);
                 target.setHealth(oldHealth);
+                if(target.getLocation().getBlock().isLiquid())
+                    damage *= 2;
                 double newHealth = Math.max(0, oldHealth - damage * (1 - damageReduction));
                 target.setHealth(newHealth);
                 var vect = target.getLocation().getDirection().multiply(-1);
@@ -124,7 +132,6 @@ public class ZombieBoss extends EntityZombie{
                 thisBukkit.setJumping(true);
             }
             if (minionCD <= 0) {
-                List<Entity> near = thisBukkit.getNearbyEntities(10d, 10d, 10d); // get all nearby entities
                 for (Entity e : near) {
                     if (e instanceof Player) {
                         for (var i = 0; i <= MINIONS; i++) {
