@@ -27,6 +27,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,16 +61,7 @@ public class LightningWand implements CommandExecutor {
                 var name = main.getItemMeta().displayName();
                 if (name != null && name.toString().contains("Lightning Wand")) {
                     var meta = main.getItemMeta();
-                    var metaname = meta.displayName();
-                    metaname = metaname.replaceText(TextReplacementConfig.builder().match(" \\(Empty\\)").replacement("").build());
-                    meta.displayName(metaname);
-                    var list = meta.lore();
-                    var comp = list.get(0);
-                    list.remove(0);
-                    list.add(0, comp.replaceText(TextReplacementConfig.builder().match(Pattern.compile("[0-5]\\/5")).replacement("5/5").build()));
-                    meta.lore(list);
-                    meta.addEnchant(Enchantment.ARROW_INFINITE, 5, true);
-                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                    createMeta(meta);
                     main.setItemMeta(meta);
                 }
             } else {
@@ -78,21 +70,25 @@ public class LightningWand implements CommandExecutor {
                     var name = off.getItemMeta().displayName();
                     if (name != null && name.toString().contains("Lightning Wand")) {
                         var meta = off.getItemMeta();
-                        var metaname = meta.displayName();
-                        metaname = metaname.replaceText(TextReplacementConfig.builder().match(" \\(Empty\\)").replacement("").build());
-                        meta.displayName(metaname);
-                        var list = meta.lore();
-                        var comp = list.get(0);
-                        list.remove(0);
-                        list.add(0, comp.replaceText(TextReplacementConfig.builder().match(Pattern.compile("[0-5]\\/5")).replacement("5/5").build()));
-                        meta.lore(list);
-                        meta.addEnchant(Enchantment.ARROW_INFINITE, 5, true);
-                        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                        createMeta(meta);
                         off.setItemMeta(meta);
                     }
                 }
             }
         }
+    }
+
+    private static void createMeta(ItemMeta meta) {
+        var metaname = meta.displayName();
+        metaname = metaname.replaceText(TextReplacementConfig.builder().match(" \\(Empty\\)").replacement("").build());
+        meta.displayName(metaname);
+        var list = meta.lore();
+        var comp = list.get(0);
+        list.remove(0);
+        list.add(0, comp.replaceText(TextReplacementConfig.builder().match(Pattern.compile("[0-5]\\/5")).replacement("5/5").build()));
+        meta.lore(list);
+        meta.addEnchant(Enchantment.ARROW_INFINITE, 5, true);
+        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
     }
 
     public static DropperGui rechargeGUI(Player p, Component name) {
@@ -197,13 +193,14 @@ public class LightningWand implements CommandExecutor {
         }
     }
 
-    public static void onPlayerInteract(PlayerInteractEvent e){
-        if(e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK){
-            if(e.getItem().getType() == Material.LIGHTNING_ROD && e.getItem().getItemMeta().displayName() != null && e.getItem().getItemMeta().displayName().toString().contains("Wand")){
-                DropperGui menu = rechargeGUI(e.getPlayer(), e.getItem().getItemMeta().displayName());
-                menu.show(e.getPlayer());
-                e.setCancelled(true);
-            }
+    public static void onPlayerInteract(PlayerInteractEvent e) {
+        if (e.getAction() == Action.RIGHT_CLICK_AIR || e.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if (e.getItem() != null)
+                if (e.getItem().getType() == Material.LIGHTNING_ROD && e.getItem().getItemMeta().displayName() != null && e.getItem().getItemMeta().displayName().toString().contains("Wand")) {
+                    DropperGui menu = rechargeGUI(e.getPlayer(), e.getItem().getItemMeta().displayName());
+                    menu.show(e.getPlayer());
+                    e.setCancelled(true);
+                }
         }
     }
 
@@ -214,21 +211,7 @@ public class LightningWand implements CommandExecutor {
                 var meta = main.getItemMeta();
                 if (meta.displayName() != null && meta.displayName().toString().contains("Lightning Wand"))
                     if (meta.hasEnchant(Enchantment.ARROW_INFINITE)) {
-                        var level = meta.getEnchantLevel(Enchantment.ARROW_INFINITE);
-                        meta.removeEnchant(Enchantment.ARROW_INFINITE);
-                        if (level - 1 != 0)
-                            meta.addEnchant(Enchantment.ARROW_INFINITE, level - 1, true);
-                        else {
-                            var name = meta.displayName();
-                            name = name.append(Component.text(" (Empty)"));
-                            meta.displayName(name);
-                        }
-                        var list = meta.lore();
-                        var comp = list.get(0);
-                        list.remove(0);
-                        String charge = String.valueOf(level - 1) + "/5";
-                        list.add(0, comp.replaceText(TextReplacementConfig.builder().match(Pattern.compile("[0-5]\\/5")).replacement(charge).build()));
-                        meta.lore(list);
+                        updateMeta(meta);
                         main.setItemMeta(meta);
                         e.getEntity().getWorld().strikeLightning(e.getEntity().getLocation());
                     }
@@ -238,26 +221,30 @@ public class LightningWand implements CommandExecutor {
                     var meta = off.getItemMeta();
                     if (meta.displayName() != null && meta.displayName().toString().contains("Lightning Wand"))
                         if (meta.hasEnchant(Enchantment.ARROW_INFINITE)) {
-                            var level = meta.getEnchantLevel(Enchantment.ARROW_INFINITE);
-                            meta.removeEnchant(Enchantment.ARROW_INFINITE);
-                            if (level - 1 != 0)
-                                meta.addEnchant(Enchantment.ARROW_INFINITE, level - 1, true);
-                            else {
-                                var name = meta.displayName();
-                                name = name.append(Component.text(" (Empty)"));
-                                meta.displayName(name);
-                            }
-                            var list = meta.lore();
-                            var comp = list.get(0);
-                            list.remove(0);
-                            String charge = String.valueOf(level - 1) + "/5";
-                            list.add(0, comp.replaceText(TextReplacementConfig.builder().match(Pattern.compile("[0-5]\\/5")).replacement(charge).build()));
-                            meta.lore(list);
+                            updateMeta(meta);
                             off.setItemMeta(meta);
                             e.getEntity().getWorld().strikeLightning(e.getEntity().getLocation());
                         }
                 }
             }
         }
+    }
+
+    private static void updateMeta(ItemMeta meta) {
+        var level = meta.getEnchantLevel(Enchantment.ARROW_INFINITE);
+        meta.removeEnchant(Enchantment.ARROW_INFINITE);
+        if (level - 1 != 0)
+            meta.addEnchant(Enchantment.ARROW_INFINITE, level - 1, true);
+        else {
+            var name = meta.displayName();
+            name = name.append(Component.text(" (Empty)"));
+            meta.displayName(name);
+        }
+        var list = meta.lore();
+        var comp = list.get(0);
+        list.remove(0);
+        String charge = String.valueOf(level - 1) + "/5";
+        list.add(0, comp.replaceText(TextReplacementConfig.builder().match(Pattern.compile("[0-5]\\/5")).replacement(charge).build()));
+        meta.lore(list);
     }
 }
